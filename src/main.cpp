@@ -21,7 +21,7 @@
 #include "RF24.h"
 #define CE 10
 #define CSN 9
-const byte masterAddress[5] = {'R', 'x', 'A', 'A', 'A'};
+const byte addresses[][6] = {"00001", "00002"};
 RF24 radio(CE, CSN);
 char dataReceived[10];    // this must match dataToSend in the TX
 int ackData[19] = {0, 0}; // This array will be sent to the Master with the IMU Data. I can send upto 32 bytes of data at a time.
@@ -64,12 +64,9 @@ void setup()
   //Radio Communication (nRF24L01+LA+PNA)
   Serial.println("Radio Communnication Starting...");
   radio.begin();
-  radio.setDataRate(RF24_250KBPS);
-  radio.setRetries(3, 5);
-  radio.openReadingPipe(1, masterAddress);
-  radio.enableAckPayload();
-  radio.startListening();
-  radio.writeAckPayload(1, &ackData, sizeof(ackData)); // pre-load data
+  radio.openWritingPipe(addresses[0]);    // 00002
+  radio.openReadingPipe(1, addresses[1]); // 00001
+  radio.setPALevel(RF24_PA_MIN);
   Serial.println("Radio Communication Started!");
 
   //Servo Initialization (NodeMCU)
@@ -129,6 +126,7 @@ void setup()
 
 void loop()
 {
+  radio.startListening();
   if (radio.available())
   {
     radio.read(&dataReceived, sizeof(dataReceived));
@@ -160,6 +158,7 @@ void loop()
     newData = true;
   }
 
+  radio.stopListening();
   if (newData == true)
   {
     servoElevator.write(rightY + offsetElevator);
@@ -194,6 +193,6 @@ void loop()
 
     ackData[18] = IMU_Left.getTemperature_C();
     //ackData[19] = IMU_Right.getTemperature_C();
-    radio.writeAckPayload(1, &ackData, sizeof(ackData));
+    radio.write(&ackData, sizeof(ackData));
   }
 }
