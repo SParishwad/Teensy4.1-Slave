@@ -8,35 +8,36 @@
 /**
  * Standard Libraries
  */
-#include <Arduino.h>
-#include <SPI.h>
-// int led = 13;
-/*******************************************************************/
-
 /**
  * Teensy 4.1 Radio Slave
  * CE 10; CSN 9; SCK 13; MISO 12; MOSI 11;
  */
-#include "nRF24L01.h"
-#include "RF24.h"
+#include <Arduino.h>
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
+// int led = 13;
+/*******************************************************************/
+
 #define CE 10
 #define CSN 9
-const byte masterAddress[5] = {'R', 'x', 'A', 'A', 'A'};
+const byte addresses[][6] = {"00001", "00002"};
+//const byte address[6] = "00001";
 RF24 radio(CE, CSN);
-char dataReceived[10];    // this must match dataToSend in the TX
-int ackData[19] = {0, 0}; // This array will be sent to the Master with the IMU Data. I can send upto 32 bytes of data at a time.
+char dataReceived[32] = {0};    // this must match dataToSend in the TX
+//int ackData[19] = {0, 0}; // This array will be sent to the Master with the IMU Data. I can send upto 32 bytes of data at a time.
 bool newData = false;
 /*******************************************************************/
 
 /**
  * Servo Motor Control
  */
-#include <Servo.h>
+/*#include <Servo.h>
 Servo servoElevator;
 Servo servoRudder;
 Servo servoLeftAileron;
 Servo servoRightAileron;
-Servo servoBLDC;
+Servo servoBLDC;*/
 char *joystickID, *cRightX, *cRightY, *cLeftX, *cLeftY;
 int rightX = 0, rightY = 0, leftX = 0, leftY = 0;
 int offsetElevator = 84;
@@ -49,10 +50,10 @@ int offsetBLDC = 90;
 /**
  * Waveshare 10 DOF IMU (Lib: Bolderflight I2C)
  */
-#include "MPU9250.h"
+/*#include "MPU9250.h"
 MPU9250 IMU_Left(Wire, 0x68);   // "Wire" object refers to pins 18/19
 MPU9250 IMU_Right(Wire1, 0x68); // "Wire1" Object refers to pins 16/17 and needs to be initialized in Setup
-int status;
+int status;*/
 /*******************************************************************/
 
 void setup()
@@ -61,19 +62,8 @@ void setup()
   delay(10);
   // pinMode(led, OUTPUT);
 
-  //Radio Communication (nRF24L01+LA+PNA)
-  Serial.println("Radio Communnication Starting...");
-  radio.begin();
-  radio.setDataRate(RF24_250KBPS);
-  radio.setRetries(3, 5);
-  radio.openReadingPipe(1, masterAddress);
-  radio.enableAckPayload();
-  radio.startListening();
-  radio.writeAckPayload(1, &ackData, sizeof(ackData)); // pre-load data
-  Serial.println("Radio Communication Started!");
-
   //Servo Initialization (NodeMCU)
-  Serial.println("Initializing Servos...");
+  /*Serial.println("Initializing Servos...");
   servoElevator.attach(5);
   servoElevator.write(offsetElevator);
   delay(200);
@@ -101,9 +91,9 @@ void setup()
     Serial.println("Check IMU wiring or try cycling power");
     Serial.print("Status: ");
     Serial.println(status);
-    while (1)
-    {
-    }
+    //while (1)
+    //{
+    //}
   }
   status = IMU_Right.begin();
   if (status < 0)
@@ -112,9 +102,9 @@ void setup()
     Serial.println("Check IMU wiring or try cycling power");
     Serial.print("Status: ");
     Serial.println(status);
-    while (1)
-    {
-    }
+    //while (1)
+    //{
+    //}
   }
   IMU_Left.setAccelRange(MPU9250::ACCEL_RANGE_8G);          // setting the accelerometer full scale range to +/-8G
   IMU_Left.setGyroRange(MPU9250::GYRO_RANGE_500DPS);        // setting the gyroscope full scale range to +/-500 deg/s
@@ -124,14 +114,29 @@ void setup()
   IMU_Right.setGyroRange(MPU9250::GYRO_RANGE_500DPS);       // setting the gyroscope full scale range to +/-500 deg/s
   IMU_Right.setDlpfBandwidth(MPU9250::DLPF_BANDWIDTH_20HZ); // setting DLPF bandwidth to 20 Hz
   IMU_Right.setSrd(19);                                     // setting SRD to 19 for a 50 Hz update rate
-  Serial.println("IMUs Initialized!");
+  Serial.println("IMUs Initialized!");*/
+
+  //Radio Communication (nRF24L01+LA+PNA)
+  Serial.println("Radio Communnication Starting...");
+  //Serial.println(addresses[0]);
+  radio.begin();
+  //radio.openWritingPipe(addresses[1]);    // 00002
+  radio.openReadingPipe(0, addresses[0]); // 00001
+  radio.setPALevel(RF24_PA_MIN);
+  delay(1000);
+  Serial.println("Radio Communication Started!");
+  radio.startListening();
 }
 
 void loop()
 {
+  //radio.read(&dataReceived, sizeof(dataReceived));
+  //Serial.println("Debug");
+  //Serial.print(dataReceived);
   if (radio.available())
   {
     radio.read(&dataReceived, sizeof(dataReceived));
+    Serial.println(dataReceived);
     joystickID = strtok((char *)dataReceived, ";");
     if (*joystickID == 'R')
     {
@@ -144,11 +149,6 @@ void loop()
       Serial.print("\t");
       Serial.print(atof(cRightY));
       Serial.print("\n");
-      Serial.print("Left Joystick:   ");
-      Serial.print(atof(cLeftX));
-      Serial.print("\t");
-      Serial.print(atof(cLeftY));
-      Serial.print("\n");
     }
     else if (*joystickID == 'L')
     {
@@ -156,11 +156,17 @@ void loop()
       leftX = atoi(cLeftX);
       cLeftY = strtok(NULL, ";");
       leftY = atoi(cLeftY);
+      Serial.print("Left Joystick:   ");
+      Serial.print(atof(cLeftX));
+      Serial.print("\t");
+      Serial.print(atof(cLeftY));
+      Serial.print("\n");
     }
     newData = true;
   }
+  //radio.stopListening();
 
-  if (newData == true)
+  /*if (newData == true)
   {
     servoElevator.write(rightY + offsetElevator);
     servoRudder.write(leftX + offsetRudder);
@@ -193,7 +199,7 @@ void loop()
     ackData[17] = IMU_Right.getMagZ_uT();
 
     ackData[18] = IMU_Left.getTemperature_C();
-    //ackData[19] = IMU_Right.getTemperature_C();
-    radio.writeAckPayload(1, &ackData, sizeof(ackData));
-  }
+    ackData[19] = IMU_Right.getTemperature_C();
+    radio.write(&ackData, sizeof(ackData));
+  }*/
 }
