@@ -32,12 +32,12 @@ bool newData = false;
 /**
  * Servo Motor Control
  */
-/*#include <Servo.h>
+#include <Servo.h>
 Servo servoElevator;
 Servo servoRudder;
 Servo servoLeftAileron;
 Servo servoRightAileron;
-Servo servoBLDC;*/
+Servo servoBLDC;
 char *joystickID, *cRightX, *cRightY, *cLeftX, *cLeftY;
 int rightX = 0, rightY = 0, leftX = 0, leftY = 0;
 int offsetElevator = 84;
@@ -59,29 +59,29 @@ int status;*/
 void setup()
 {
   Serial.begin(115200);
-  delay(10);
+  delay(1000);
   // pinMode(led, OUTPUT);
 
   //Servo Initialization (NodeMCU)
-  /*Serial.println("Initializing Servos...");
-  servoElevator.attach(5);
+  Serial.println("Initializing Servos...");
+  servoElevator.attach(5);  //5
   servoElevator.write(offsetElevator);
   delay(200);
-  servoRudder.attach(4);
+  servoRudder.attach(6);  //4
   servoRudder.write(offsetRudder);
   delay(200);
-  servoBLDC.attach(14);
-  servoLeftAileron.attach(0);
+  servoBLDC.attach(2); //14
+  servoLeftAileron.attach(3);  //0
   servoLeftAileron.write(offsetLeftAileron);
   delay(200);
-  servoRightAileron.attach(2);
+  servoRightAileron.attach(4);  //2
   servoRightAileron.write(offsetRightAileron);
   delay(200);
   servoBLDC.write(0);
   Serial.println("Servos Initialized!");
 
   // 10 DOF IMU Initialization
-  Serial.println("Initializing IMUs...");
+  /*Serial.println("Initializing IMUs...");
   Wire1.setSCL(16);
   Wire1.setSDA(17);
   status = IMU_Left.begin();
@@ -166,15 +166,17 @@ void loop()
   }
   //radio.stopListening();
 
-  /*if (newData == true)
+  if (newData == true)
   {
+    Serial.print("LeftAileron: ");
+    Serial.println(rightX + offsetLeftAileron);
     servoElevator.write(rightY + offsetElevator);
     servoRudder.write(leftX + offsetRudder);
     servoLeftAileron.write(rightX + offsetLeftAileron);
     servoRightAileron.write(rightX + offsetRightAileron);
     servoBLDC.write(offsetBLDC - leftY);
     newData = false;
-
+/*
     IMU_Left.readSensor();
     IMU_Right.readSensor();
     ackData[0] = IMU_Left.getAccelX_mss(); // Convert the variable to char
@@ -200,6 +202,6 @@ void loop()
 
     ackData[18] = IMU_Left.getTemperature_C();
     ackData[19] = IMU_Right.getTemperature_C();
-    radio.write(&ackData, sizeof(ackData));
-  }*/
+    radio.write(&ackData, sizeof(ackData));*/
+  }
 }
