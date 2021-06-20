@@ -1,6 +1,8 @@
 /**
  * 12.07.2020: Teensy 4.1 as slave
- *    - nRF24L01 Slave
+ *    - nRF24L01 Slave https://forum.arduino.cc/t/simple-nrf24l01-2-4ghz-transceiver-demo/405123/2
+ *       - ctrlData is the data to control the servos
+ *       - imuData is the data received from the IMUs
  *    - Servo Control
  *    - 10 DOF IMU
  */
@@ -21,11 +23,11 @@
 
 #define CE 10
 #define CSN 9
-const byte addresses[][6] = {"00001", "00002"};
-//const byte address[6] = "00001";
+//const byte addresses[][6] = {"00001", "00002"};
+const byte address[6] = "00001";
 RF24 radio(CE, CSN);
-char dataReceived[32] = {0};    // this must match dataToSend in the TX
-int ackData[19] = {0, 0}; // This array will be sent to the Master with the IMU Data. I can send upto 32 bytes of data at a time.
+char ctrlData[32] = {0};    // this must match dataToSend in the TX
+int imuData[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // This array will be sent to the Master with the IMU Data. I can send upto 32 bytes of data at a time.
 bool newData = false;
 /*******************************************************************/
 
@@ -91,9 +93,9 @@ void setup()
     Serial.println("Check IMU wiring or try cycling power");
     Serial.print("Status: ");
     Serial.println(status);
-    //while (1)
-    //{
-    //}
+    while (1)
+    {
+    }
   }
   status = IMU_Right.begin();
   if (status < 0)
@@ -102,9 +104,9 @@ void setup()
     Serial.println("Check IMU wiring or try cycling power");
     Serial.print("Status: ");
     Serial.println(status);
-    //while (1)
-    //{
-    //}
+    while (1)
+    {
+    }
   }
   IMU_Left.setAccelRange(MPU9250::ACCEL_RANGE_8G);          // setting the accelerometer full scale range to +/-8G
   IMU_Left.setGyroRange(MPU9250::GYRO_RANGE_500DPS);        // setting the gyroscope full scale range to +/-500 deg/s
@@ -120,24 +122,61 @@ void setup()
   Serial.println("Radio Communnication Starting...");
   //Serial.println(addresses[0]);
   radio.begin();
-  radio.openWritingPipe(addresses[1]);    // 00002
+  radio.setDataRate( RF24_250KBPS );
+  radio.openReadingPipe(0, address); // 00001
+  radio.enableAckPayload();
+  radio.startListening();
+  radio.writeAckPayload(0, &imuData, sizeof(imuData)); // pre-load data
+  /* radio.openWritingPipe(addresses[1]);    // 00002
   radio.openReadingPipe(0, addresses[0]); // 00001
-  radio.setPALevel(RF24_PA_MIN);
+  radio.setPALevel(RF24_PA_MIN); */
   delay(1000);
   Serial.println("Radio Communication Started!");
-  radio.startListening();
+  //radio.startListening();
 }
+
+void updateReplyData() {
+  IMU_Left.readSensor();
+  IMU_Right.readSensor();
+  imuData[0] = IMU_Left.getAccelX_mss(); // Convert the variable to char
+  imuData[1] = IMU_Right.getAccelX_mss();
+  imuData[2] = IMU_Left.getAccelY_mss();
+  imuData[3] = IMU_Right.getAccelY_mss();
+  imuData[4] = IMU_Left.getAccelZ_mss();
+  imuData[5] = IMU_Right.getAccelZ_mss();
+
+  imuData[6] = IMU_Left.getGyroX_rads();
+  imuData[7] = IMU_Right.getGyroX_rads();
+  imuData[8] = IMU_Left.getGyroY_rads();
+  imuData[9] = IMU_Right.getGyroY_rads();
+  imuData[10] = IMU_Left.getGyroZ_rads();
+  imuData[11] = IMU_Right.getGyroZ_rads();
+
+  imuData[12] = IMU_Left.getMagX_uT();
+  imuData[13] = IMU_Right.getMagX_uT();
+  imuData[14] = IMU_Left.getMagY_uT();
+  imuData[15] = IMU_Right.getMagY_uT();
+  imuData[16] = IMU_Left.getMagZ_uT();
+  imuData[17] = IMU_Right.getMagZ_uT();
+
+  imuData[18] = IMU_Left.getTemperature_C();
+  imuData[19] = IMU_Right.getTemperature_C();
+  radio.writeAckPayload(0, &imuData, sizeof(imuData)); // load the payload for the next time
+}
+
+
 
 void loop()
 {
-  //radio.read(&dataReceived, sizeof(dataReceived));
+  //radio.read(&ctrlData, sizeof(ctrlData));
   //Serial.println("Debug");
-  //Serial.print(dataReceived);
+  //Serial.print(ctrlData);
+  
   if (radio.available())
   {
-    radio.read(&dataReceived, sizeof(dataReceived));
-    Serial.println(dataReceived);
-    joystickID = strtok((char *)dataReceived, ";");
+    radio.read(&ctrlData, sizeof(ctrlData));
+    Serial.println(ctrlData);
+    joystickID = strtok((char *)ctrlData, ";");
     if (*joystickID == 'R')
     {
       cRightX = strtok(NULL, ";");
@@ -164,7 +203,7 @@ void loop()
     }
     newData = true;
   }
-  radio.stopListening();
+  //radio.stopListening();
 
   if (newData == true)
   {
@@ -176,32 +215,7 @@ void loop()
     servoRightAileron.write(rightX + offsetRightAileron);
     servoBLDC.write(offsetBLDC - leftY);
     newData = false;
-
-    IMU_Left.readSensor();
-    IMU_Right.readSensor();
-    ackData[0] = IMU_Left.getAccelX_mss(); // Convert the variable to char
-    ackData[1] = IMU_Right.getAccelX_mss();
-    ackData[2] = IMU_Left.getAccelY_mss();
-    ackData[3] = IMU_Right.getAccelY_mss();
-    ackData[4] = IMU_Left.getAccelZ_mss();
-    ackData[5] = IMU_Right.getAccelZ_mss();
-
-    ackData[6] = IMU_Left.getGyroX_rads();
-    ackData[7] = IMU_Right.getGyroX_rads();
-    ackData[8] = IMU_Left.getGyroY_rads();
-    ackData[9] = IMU_Right.getGyroY_rads();
-    ackData[10] = IMU_Left.getGyroZ_rads();
-    ackData[11] = IMU_Right.getGyroZ_rads();
-
-    ackData[12] = IMU_Left.getMagX_uT();
-    ackData[13] = IMU_Right.getMagX_uT();
-    ackData[14] = IMU_Left.getMagY_uT();
-    ackData[15] = IMU_Right.getMagY_uT();
-    ackData[16] = IMU_Left.getMagZ_uT();
-    ackData[17] = IMU_Right.getMagZ_uT();
-
-    ackData[18] = IMU_Left.getTemperature_C();
-    ackData[19] = IMU_Right.getTemperature_C();
-    radio.write(&ackData, sizeof(ackData));
   }
+
+  updateReplyData();
 }
