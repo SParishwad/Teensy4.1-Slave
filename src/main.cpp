@@ -25,7 +25,7 @@ const byte addresses[][6] = {"00001", "00002"};
 //const byte address[6] = "00001";
 RF24 radio(CE, CSN);
 char dataReceived[32] = {0};    // this must match dataToSend in the TX
-//int ackData[19] = {0, 0}; // This array will be sent to the Master with the IMU Data. I can send upto 32 bytes of data at a time.
+int ackData[19] = {0, 0}; // This array will be sent to the Master with the IMU Data. I can send upto 32 bytes of data at a time.
 bool newData = false;
 /*******************************************************************/
 
@@ -50,10 +50,10 @@ int offsetBLDC = 90;
 /**
  * Waveshare 10 DOF IMU (Lib: Bolderflight I2C)
  */
-/*#include "MPU9250.h"
+#include <MPU9250.h>
 MPU9250 IMU_Left(Wire, 0x68);   // "Wire" object refers to pins 18/19
 MPU9250 IMU_Right(Wire1, 0x68); // "Wire1" Object refers to pins 16/17 and needs to be initialized in Setup
-int status;*/
+int status;
 /*******************************************************************/
 
 void setup()
@@ -81,7 +81,7 @@ void setup()
   Serial.println("Servos Initialized!");
 
   // 10 DOF IMU Initialization
-  /*Serial.println("Initializing IMUs...");
+  Serial.println("Initializing IMUs...");
   Wire1.setSCL(16);
   Wire1.setSDA(17);
   status = IMU_Left.begin();
@@ -114,13 +114,13 @@ void setup()
   IMU_Right.setGyroRange(MPU9250::GYRO_RANGE_500DPS);       // setting the gyroscope full scale range to +/-500 deg/s
   IMU_Right.setDlpfBandwidth(MPU9250::DLPF_BANDWIDTH_20HZ); // setting DLPF bandwidth to 20 Hz
   IMU_Right.setSrd(19);                                     // setting SRD to 19 for a 50 Hz update rate
-  Serial.println("IMUs Initialized!");*/
+  Serial.println("IMUs Initialized!");
 
   //Radio Communication (nRF24L01+LA+PNA)
   Serial.println("Radio Communnication Starting...");
   //Serial.println(addresses[0]);
   radio.begin();
-  //radio.openWritingPipe(addresses[1]);    // 00002
+  radio.openWritingPipe(addresses[1]);    // 00002
   radio.openReadingPipe(0, addresses[0]); // 00001
   radio.setPALevel(RF24_PA_MIN);
   delay(1000);
@@ -164,7 +164,7 @@ void loop()
     }
     newData = true;
   }
-  //radio.stopListening();
+  radio.stopListening();
 
   if (newData == true)
   {
@@ -176,7 +176,7 @@ void loop()
     servoRightAileron.write(rightX + offsetRightAileron);
     servoBLDC.write(offsetBLDC - leftY);
     newData = false;
-/*
+
     IMU_Left.readSensor();
     IMU_Right.readSensor();
     ackData[0] = IMU_Left.getAccelX_mss(); // Convert the variable to char
@@ -202,6 +202,6 @@ void loop()
 
     ackData[18] = IMU_Left.getTemperature_C();
     ackData[19] = IMU_Right.getTemperature_C();
-    radio.write(&ackData, sizeof(ackData));*/
+    radio.write(&ackData, sizeof(ackData));
   }
 }
