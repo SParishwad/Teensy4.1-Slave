@@ -24,9 +24,9 @@
 
 const byte address[6] = "00001";
 RF24 radio(CE_PIN, CSN_PIN);
-
-char ctrlData[32] = {0};       // this must match dataToSend in the TX
-int imuData[2] = {109, -4000}; // the two values to be sent to the master
+char ctrlData[32] = {0};   
+//char imuData_string[32] = {0};                                                       // this must match dataToSend in the TX
+float imuData[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // the two values to be sent to the master
 bool newData = false;
 /*******************************************************************/
 
@@ -101,15 +101,15 @@ void setup()
     }
   }
   IMU_Left.setAccelRange(MPU9250::ACCEL_RANGE_8G);          // setting the accelerometer full scale range to +/-8G
-  IMU_Left.setGyroRange(MPU9250::GYRO_RANGE_500DPS);        // setting the gyroscope full scale range to +/-500 deg/s
+  IMU_Left.setGyroRange(MPU9250::GYRO_RANGE_250DPS);        // setting the gyroscope full scale range to +/-250 deg/s
   IMU_Left.setDlpfBandwidth(MPU9250::DLPF_BANDWIDTH_20HZ);  // setting DLPF bandwidth to 20 Hz
   IMU_Left.setSrd(19);                                      // setting SRD to 19 for a 50 Hz update rate
   IMU_Right.setAccelRange(MPU9250::ACCEL_RANGE_8G);         // setting the accelerometer full scale range to +/-8G
-  IMU_Right.setGyroRange(MPU9250::GYRO_RANGE_500DPS);       // setting the gyroscope full scale range to +/-500 deg/s
+  IMU_Right.setGyroRange(MPU9250::GYRO_RANGE_250DPS);       // setting the gyroscope full scale range to +/-250 deg/s
   IMU_Right.setDlpfBandwidth(MPU9250::DLPF_BANDWIDTH_20HZ); // setting DLPF bandwidth to 20 Hz
   IMU_Right.setSrd(19);                                     // setting SRD to 19 for a 50 Hz update rate
   Serial.println("IMUs Initialized!");
-  
+
   /*******************************************************************/
   //Servo Initialization (NodeMCU)
   Serial.println("Initializing Servos...");
@@ -131,18 +131,6 @@ void setup()
   /*******************************************************************/
 }
 
-/*void updateReplyData() {
-    ackData[0] -= 1;
-    ackData[1] -= 1;
-    if (ackData[0] < 100) {
-        ackData[0] = 109;
-    }
-    if (ackData[1] < -4009) {
-        ackData[1] = -4000;
-    }
-    radio.writeAckPayload(1, &ackData, sizeof(ackData)); // load the payload for the next time
-}*/
-
 /*******************************************************************/
 void updateReplyData()
 {
@@ -150,7 +138,7 @@ void updateReplyData()
   IMU_Right.readSensor();
   imuData[0] = IMU_Left.getAccelX_mss(); // Convert the variable to char
   imuData[1] = IMU_Right.getAccelX_mss();
-  /*imuData[2] = IMU_Left.getAccelY_mss();
+  imuData[2] = IMU_Left.getAccelY_mss();
   imuData[3] = IMU_Right.getAccelY_mss();
   imuData[4] = IMU_Left.getAccelZ_mss();
   imuData[5] = IMU_Right.getAccelZ_mss();
@@ -170,7 +158,7 @@ void updateReplyData()
   imuData[17] = IMU_Right.getMagZ_uT();
 
   imuData[18] = IMU_Left.getTemperature_C();
-  imuData[19] = IMU_Right.getTemperature_C();*/
+  imuData[19] = IMU_Right.getTemperature_C();
   radio.writeAckPayload(1, &imuData, sizeof(imuData)); // load the payload for the next time
 }
 /*******************************************************************/
@@ -179,12 +167,48 @@ void servoActuation()
 {
   if (newData == true)
   {
-    Serial.print("Data received ");
-    Serial.println(ctrlData);
-    Serial.print(" ackPayload sent ");
+    //Serial.print("Data received ");
+    //Serial.println(ctrlData);
+    //Serial.print(" ackPayload sent ");
     Serial.print(imuData[0]);
     Serial.print(", ");
-    Serial.println(imuData[1]);
+    Serial.print(imuData[1]);
+    Serial.print(", ");
+    Serial.print(imuData[2]);
+    Serial.print(", ");
+    Serial.print(imuData[3]);
+    Serial.print(", ");
+    Serial.print(imuData[4]);
+    Serial.print(", ");
+    Serial.print(imuData[5]);
+    Serial.print(", ");
+    Serial.print(imuData[6]);
+    Serial.print(", ");
+    Serial.print(imuData[7]);
+    Serial.print(", ");
+    Serial.print(imuData[8]);
+    Serial.print(", ");
+    Serial.print(imuData[9]);
+    Serial.print(", ");
+    Serial.print(imuData[10]);
+    Serial.print(", ");
+    Serial.print(imuData[11]);
+    Serial.print(", ");
+    Serial.print(imuData[12]);
+    Serial.print(", ");
+    Serial.print(imuData[13]);
+    Serial.print(", ");
+    Serial.print(imuData[14]);
+    Serial.print(", ");
+    Serial.print(imuData[15]);
+    Serial.print(", ");
+    Serial.print(imuData[16]);
+    Serial.print(", ");
+    Serial.print(imuData[17]);
+    Serial.print(", ");
+    Serial.print(imuData[18]);
+    Serial.print(", ");
+    Serial.println(imuData[19]);
     servoElevator.write(rightY + offsetElevator);
     servoRudder.write(leftX + offsetRudder);
     servoLeftAileron.write(rightX + offsetLeftAileron);
@@ -234,23 +258,54 @@ void getData()
 
 void showData()
 {
-  if (newData == true)
-  {
-    Serial.print("Data received ");
-    Serial.println(ctrlData);
-    Serial.print(" ackPayload sent ");
     Serial.print(imuData[0]);
     Serial.print(", ");
-    Serial.println(imuData[1]);
-    newData = false;
-  }
+    Serial.print(imuData[1]);
+    Serial.print(", ");
+    Serial.println(imuData[2]);
+    /*Serial.print(", ");
+    Serial.print(imuData[3]);
+    Serial.print(", ");
+    Serial.print(imuData[4]);
+    Serial.print(", ");
+    Serial.print(imuData[5]);
+    Serial.print(", ");
+    Serial.print(imuData[6]);
+    Serial.print(", ");
+    Serial.print(imuData[7]);
+    Serial.print(", ");
+    Serial.print(imuData[8]);
+    Serial.print(", ");
+    Serial.print(imuData[9]);
+    Serial.print(", ");
+    Serial.print(imuData[10]);
+    Serial.print(", ");
+    Serial.print(imuData[11]);
+    Serial.print(", ");
+    Serial.print(imuData[12]);
+    Serial.print(", ");
+    Serial.print(imuData[13]);
+    Serial.print(", ");
+    Serial.print(imuData[14]);
+    Serial.print(", ");
+    Serial.print(imuData[15]);
+    Serial.print(", ");
+    Serial.print(imuData[16]);
+    Serial.print(", ");
+    Serial.print(imuData[17]);
+    Serial.print(", ");
+    Serial.print(imuData[18]);
+    Serial.print(", ");
+    Serial.println(imuData[19]);*/
 }
 
 //================
 
 void loop()
 {
-  getData();
-  //showData();
-  servoActuation();
+  updateReplyData();
+  delay(1000);
+  //getData();
+  showData();
+  //servoActuation();
 }
