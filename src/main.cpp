@@ -21,8 +21,8 @@
 
 #define CE 10
 #define CSN 9
-const byte addresses[][6] = {"00001", "00002"};
-//const byte address[6] = "00001";
+//const byte addresses[][6] = {"00001", "00002"};
+const byte address[6] = "00001";
 RF24 radio(CE, CSN);
 char dataReceived[32] = {0};    // this must match dataToSend in the TX
 //int ackData[19] = {0, 0}; // This array will be sent to the Master with the IMU Data. I can send upto 32 bytes of data at a time.
@@ -121,7 +121,7 @@ void setup()
   //Serial.println(addresses[0]);
   radio.begin();
   //radio.openWritingPipe(addresses[1]);    // 00002
-  radio.openReadingPipe(0, addresses[0]); // 00001
+  radio.openReadingPipe(0, address); // 00001
   radio.setPALevel(RF24_PA_MIN);
   delay(1000);
   Serial.println("Radio Communication Started!");
