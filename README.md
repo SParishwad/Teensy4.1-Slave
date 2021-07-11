@@ -36,7 +36,7 @@ The data is read from the nRF24L01 buffer by using the command `radio.read(&data
 
 
 ## Servo Control 
-The Ailerons, Elevator and Rudder are controlled via 4 servos incorporated in the model airplane design. The BLDC can also be controlled by by using the servo library. 
+The Ailerons, Elevator and Rudder are controlled via 4 servos incorporated in the model airplane design. The BLDC can also be controlled by using the servo library. 
 
 The library is included and the servo objects are created. In the setup section the servos are initialized and centered. In the main section, the `servo_obj.write()` function is used to control the servos based on the commands received from the NodeMCU Master.   
 
